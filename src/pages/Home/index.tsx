@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Feather as Icon } from "@expo/vector-icons";
-import {
-  View,
-  ImageBackground,
-  Text,
-  Image,
-  StyleSheet,
-  TextInput,
-  KeyboardAvoidingView,
-  Platform,
-} from "react-native";
+import { View, ImageBackground, Text, Image, StyleSheet } from "react-native";
 import { RectButton } from "react-native-gesture-handler";
 import { useNavigation } from "@react-navigation/native";
 import RNPickerSelect from "react-native-picker-select";
@@ -219,8 +210,6 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Home;
-
 const pickerSelectStyles = StyleSheet.create({
   inputIOS: {
     color: "black",
@@ -241,3 +230,5 @@ const pickerSelectStyles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
+export default Home;

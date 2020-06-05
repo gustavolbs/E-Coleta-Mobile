@@ -1,28 +1,28 @@
 {
   "expo": {
-    "name": "mobile",
-    "slug": "mobile",
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
+    "name": "E-Coleta",
+    "slug": "E-Coleta",
+    "platforms": ["ios", "android", "web"],
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/logo.png",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#f0f0f5"
     },
     "updates": {
       "fallbackToCacheTimeout": 0
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
+      "bundleIdentifier": "com.gustavolbs.ecoleta",
+      "buildNumber": "1.0.0",
       "supportsTablet": true
+    },
+    "android": {
+      "package": "com.gustavolbs.ecoleta",
+      "versionCode": 1
     }
   }
 }
