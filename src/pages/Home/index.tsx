@@ -1,8 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { Feather as Icon } from "@expo/vector-icons";
-import { StyleSheet, View, ImageBackground, Text, Image } from "react-native";
+import {
+  View,
+  ImageBackground,
+  Text,
+  Image,
+  StyleSheet,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
 import { RectButton } from "react-native-gesture-handler";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import RNPickerSelect from "react-native-picker-select";
 import axios from "axios";
 
@@ -15,29 +24,28 @@ interface IBGECityResponse {
 }
 
 const Home: React.FC = () => {
-  const [ufsDropdown, setUfsDropdown] = useState<
-    { label: string; value: string }[]
-  >([{ label: "Selecione uma UF", value: "0" }]);
-  const [citiesDropdown, setCitiesDropdown] = useState<
-    { label: string; value: string }[]
-  >([{ label: "Selecione uma Cidade", value: "0" }]);
-  const [selectedUf, setSelectedUf] = useState("0");
-  const [selectedCity, setSelectedCity] = useState("0");
-
   const navigation = useNavigation();
+  const [ufs, setUfs] = useState<{ label: string; value: string }[]>([]);
+  const [cities, setCities] = useState<{ label: string; value: string }[]>([]);
+  const [selectedUf, setSelectedUf] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
 
   function handleNavigateToPoints() {
-    navigation.navigate("Points", { city: selectedCity, uf: selectedUf });
+    navigation.navigate("Points", {
+      uf: selectedUf,
+      city: selectedCity,
+    });
   }
 
-  function compare(a: string, b: string) {
-    const A = a.toUpperCase();
-    const B = b.toUpperCase();
+  function compare(a, b) {
+    // Use toUpperCase() to ignore character casing
+    const bandA = a.label.toUpperCase();
+    const bandB = b.label.toUpperCase();
 
     let comparison = 0;
-    if (A > B) {
+    if (bandA > bandB) {
       comparison = 1;
-    } else if (A < B) {
+    } else if (bandA < bandB) {
       comparison = -1;
     }
     return comparison;
@@ -50,14 +58,12 @@ const Home: React.FC = () => {
           "https://servicodados.ibge.gov.br/api/v1/localidades/estados"
         )
         .then((response) => {
-          const ufInitials = response.data.map((uf) => uf.sigla);
-          ufInitials.sort(compare);
-          const ufsDropdownArray = ufInitials.map((uf) => ({
-            label: uf,
-            value: uf,
+          const ufInitials = response.data.map((uf) => ({
+            label: uf.sigla,
+            value: uf.sigla,
           }));
 
-          setUfsDropdown(ufsDropdownArray);
+          setUfs(ufInitials.sort(compare));
         });
     }
     fetchData();
@@ -74,13 +80,11 @@ const Home: React.FC = () => {
           `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedUf}/municipios`
         )
         .then((response) => {
-          const cityNames = response.data.map((city) => city.nome);
-          cityNames.sort(compare);
-          const citiesDropdownArray = cityNames.map((city) => ({
-            label: city,
-            value: city,
+          const cityNames = response.data.map((city) => ({
+            label: city.nome,
+            value: city.nome,
           }));
-          setCitiesDropdown(citiesDropdownArray);
+          setCities(cityNames.sort(compare));
         });
     }
     fetchData();
@@ -95,46 +99,54 @@ const Home: React.FC = () => {
       >
         <View style={styles.main}>
           <Image source={require("../../assets/logo.png")} />
-          <Text style={styles.title}>
-            Seu marketplace de coleta de resíduos
-          </Text>
-          <Text style={styles.description}>
-            Ajudamos pessoas a encontrarem pontos de coleta de forma eficiente.
-          </Text>
+          <View>
+            <Text style={styles.title}>
+              Seu marketplace de coleta de resíduos
+            </Text>
+            <Text style={styles.description}>
+              Ajudamos pessoas a encontrarem pontos de coleta de forma eficiente
+            </Text>
+          </View>
         </View>
 
         <View style={styles.footer}>
           <RNPickerSelect
+            items={ufs}
+            placeholder={{
+              label: "Selecione uma UF...",
+              value: null,
+            }}
             style={pickerSelectStyles}
-            placeholder={{ label: "Selecione uma UF", value: "0" }}
             value={selectedUf}
             onValueChange={(value) => {
               setSelectedUf(value);
             }}
-            items={ufsDropdown}
           />
           <RNPickerSelect
+            items={cities}
+            placeholder={{
+              label: "Select uma cidade...",
+              value: null,
+            }}
             style={pickerSelectStyles}
-            placeholder={{ label: "Selecione uma Cidade", value: "0" }}
             value={selectedCity}
-            onValueChange={(value) => setSelectedCity(value)}
-            items={citiesDropdown}
+            onValueChange={(value) => {
+              setSelectedCity(value);
+            }}
           />
           <RectButton style={styles.button} onPress={handleNavigateToPoints}>
             <View style={styles.buttonIcon}>
               <Text>
-                <Icon name="arrow-right" size={24} color="#FFF" />
+                <Icon name="arrow-right" color="#FFF" size={24} />
               </Text>
             </View>
-            <Text style={styles.buttonText}>Cadastre um ponto de coleta</Text>
+            <Text style={styles.buttonText}>Entrar</Text>
           </RectButton>
         </View>
       </ImageBackground>
     </>
   );
 };
-
-export default Home;
 
 const styles = StyleSheet.create({
   container: {
@@ -166,14 +178,7 @@ const styles = StyleSheet.create({
 
   footer: {},
 
-  select: {
-    height: 60,
-    backgroundColor: "#c0c0c0",
-    borderRadius: 10,
-    marginBottom: 8,
-    paddingHorizontal: 24,
-    fontSize: 16,
-  },
+  select: {},
 
   input: {
     height: 60,
@@ -198,6 +203,8 @@ const styles = StyleSheet.create({
     height: 60,
     width: 60,
     backgroundColor: "rgba(0, 0, 0, 0.1)",
+    borderTopLeftRadius: 10,
+    borderBottomLeftRadius: 10,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -212,23 +219,25 @@ const styles = StyleSheet.create({
   },
 });
 
+export default Home;
+
 const pickerSelectStyles = StyleSheet.create({
   inputIOS: {
+    color: "black",
     height: 60,
-    backgroundColor: "#fff",
+    backgroundColor: "#FFF",
     borderRadius: 10,
     marginBottom: 8,
     paddingHorizontal: 24,
     fontSize: 16,
-    color: "black",
   },
   inputAndroid: {
+    color: "black",
     height: 60,
-    backgroundColor: "#fff",
-    borderRadius: 40,
+    backgroundColor: "#FFF",
+    borderRadius: 10,
     marginBottom: 8,
     paddingHorizontal: 24,
     fontSize: 16,
-    color: "black",
   },
 });

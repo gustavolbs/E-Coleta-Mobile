@@ -1,21 +1,20 @@
 import React, { useState, useEffect } from "react";
+import Constants from "expo-constants";
+import { Feather as Icon } from "@expo/vector-icons";
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
+  Text,
   ScrollView,
   Image,
-  SafeAreaView,
   Alert,
 } from "react-native";
-import Emoji from "react-native-emoji";
-import { SvgUri } from "react-native-svg";
-import MapView, { Marker } from "react-native-maps";
-import Constants from "expo-constants";
-import * as Location from "expo-location";
-import { Feather as Icon } from "@expo/vector-icons";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import MapView, { Marker } from "react-native-maps";
+import { SvgUri } from "react-native-svg";
+import * as Location from "expo-location";
+import Emoji from "react-native-emoji";
 
 import api from "../../services/api";
 
@@ -27,9 +26,9 @@ interface Item {
 
 interface Point {
   id: number;
+  name: string;
   image: string;
   image_url: string;
-  name: string;
   latitude: number;
   longitude: number;
 }
@@ -43,100 +42,99 @@ const Points: React.FC = () => {
   const [items, setItems] = useState<Item[]>([]);
   const [points, setPoints] = useState<Point[]>([]);
   const [selectedItems, setSelectedItems] = useState<number[]>([]);
-  const [selectedPosition, setSelectedPosition] = useState<[number, number]>([
+  const [initialPosition, setInitialPosition] = useState<[number, number]>([
     0,
     0,
   ]);
 
-  const navigator = useNavigation();
+  const navigation = useNavigation();
   const route = useRoute();
 
   const routeParams = route.params as Params;
 
-  function handleGoBack() {
-    navigator.goBack();
-  }
-
-  function handleNavigateToDetail(id: number) {
-    navigator.navigate("Detail", { point_id: id });
-  }
-
-  function handleSelectItem(id: number) {
-    const alreadySelected = selectedItems.includes(id);
-
-    if (alreadySelected) {
-      const filteredItems = selectedItems.filter((item) => item !== id);
-      setSelectedItems(filteredItems);
-    } else {
-      setSelectedItems([...selectedItems, id]);
-    }
-  }
+  useEffect(() => {
+    api.get("/items").then((response) => {
+      setItems(response.data);
+    });
+  }, []);
 
   useEffect(() => {
-    async function loadItems() {
-      await api.get("/items").then((response) => {
-        setItems(response.data);
-      });
-    }
-    loadItems();
-
     async function loadPosition() {
       const { status } = await Location.requestPermissionsAsync();
+
       if (status !== "granted") {
         Alert.alert(
-          "Oooooops...",
+          "Oooops...",
           "Precisamos de sua permissão para obter a localização"
         );
         return;
       }
 
       const location = await Location.getCurrentPositionAsync();
+
       const { latitude, longitude } = location.coords;
 
-      setSelectedPosition([latitude, longitude]);
+      setInitialPosition([latitude, longitude]);
     }
     loadPosition();
   }, []);
 
   useEffect(() => {
-    async function loadPoints() {
-      await api
-        .get("/points", {
-          params: {
-            city: routeParams.city,
-            uf: routeParams.uf,
-            items: selectedItems,
-          },
-        })
-        .then((response) => {
-          setPoints(response.data);
-        });
-    }
-    loadPoints();
+    api
+      .get("points", {
+        params: {
+          city: routeParams.city,
+          uf: routeParams.uf,
+          items: selectedItems,
+        },
+      })
+      .then((response) => {
+        setPoints(response.data);
+      });
   }, [selectedItems]);
 
+  function handleNavigateBack() {
+    navigation.goBack();
+  }
+
+  function handleNavigateToDetail(id: number) {
+    navigation.navigate("Detail", { point_id: id });
+  }
+
+  function handleSelectedItem(id: number) {
+    const alreadySelected = selectedItems.findIndex((item) => item === id);
+
+    if (alreadySelected >= 0) {
+      const filteredItems = selectedItems.filter((item) => item !== id);
+
+      setSelectedItems(filteredItems);
+    } else {
+      setSelectedItems([...selectedItems, id]);
+    }
+  }
+
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <>
       <View style={styles.container}>
-        <TouchableOpacity onPress={handleGoBack}>
+        <TouchableOpacity onPress={handleNavigateBack}>
           <Icon name="arrow-left" size={20} color="#34cb79" />
         </TouchableOpacity>
 
         <View style={styles.titleContainer}>
-          <Emoji name="smiley" style={{ fontSize: 24 }} />
-          <Text style={styles.title}>Bem vindo.</Text>
+          <Emoji name="smiley" style={styles.emoji} />
+          <Text style={styles.title}>Bem vindo</Text>
         </View>
         <Text style={styles.description}>
-          Encontre no mapa um ponto de coleta.
+          Encontre no mapa um ponto de coleta
         </Text>
 
         <View style={styles.mapContainer}>
-          {selectedPosition[0] !== 0 && selectedPosition[1] !== 0 ? (
+          {initialPosition[0] !== 0 && (
             <MapView
               style={styles.map}
               initialRegion={{
-                latitude: selectedPosition[0],
-                longitude: selectedPosition[1],
+                latitude: initialPosition[0],
+                longitude: initialPosition[1],
                 latitudeDelta: 0.014,
                 longitudeDelta: 0.014,
               }}
@@ -161,8 +159,6 @@ const Points: React.FC = () => {
                 </Marker>
               ))}
             </MapView>
-          ) : (
-            <Text style={styles.title}>Carregando...</Text>
           )}
         </View>
       </View>
@@ -171,7 +167,7 @@ const Points: React.FC = () => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ paddingHorizontal: 20 }}
+          contentContainerStyle={{ padding: 20 }}
         >
           {items.map((item) => (
             <TouchableOpacity
@@ -180,7 +176,7 @@ const Points: React.FC = () => {
                 styles.item,
                 selectedItems.includes(item.id) ? styles.selectedItem : {},
               ]}
-              onPress={() => handleSelectItem(item.id)}
+              onPress={() => handleSelectedItem(item.id)}
               activeOpacity={0.6}
             >
               <SvgUri width={42} height={42} uri={item.image_url} />
@@ -189,9 +185,11 @@ const Points: React.FC = () => {
           ))}
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </>
   );
 };
+
+export default Points;
 
 const styles = StyleSheet.create({
   container: {
@@ -203,12 +201,16 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 24,
+  },
+
+  emoji: {
+    fontSize: 22,
   },
 
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: "Ubuntu_700Bold",
+    marginTop: 3,
     marginLeft: 8,
   },
 
@@ -280,6 +282,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
     alignItems: "center",
     justifyContent: "space-between",
+
     textAlign: "center",
   },
 
@@ -294,5 +297,3 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 });
-
-export default Points;
